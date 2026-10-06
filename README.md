@@ -51,6 +51,25 @@ The ring address comes from `--address`, then `$PROLO_RING_ADDRESS`, then `$XDG_
 | `settings set NAME VALUE [--dry-run] [--force]` | Changes one setting, then reads it back and reports `verified`. `--dry-run` reads the current value and shows the bytes without writing. Writes are refused on firmware other than 1.0.7 unless you pass `--force`. |
 | `profile read [--out FILE]` | Reads back the flashed gesture profile, decodes each gesture's steps, and reports the profile's mode and gesture-group flags. |
 | `raw get OPCODE [--payload HEX]` | Escape hatch: sends one read opcode and prints the reply bytes. |
+| `cheatsheet render --profile FILE [--labels FILE] [--format html\|md] [--out FILE]` | Renders a cheat sheet from a Studio profile export: one section per mode, built-in gestures included, chords shown with Mac glyphs, disabled gestures dimmed. No ring needed. |
+
+## Cheat sheet
+
+```sh
+prolo-ring cheatsheet render --profile profiles/factory-default.json --out ring.html
+```
+
+A labels file names what a chord does on your machine, so the sheet says "Raycast" instead of "⌘Space":
+
+```toml
+title = "Ring at the desk"
+
+[gestures]
+"cursor.two_finger_tap" = "Raycast"
+"navigation.long_hold" = "Push to talk"
+```
+
+Gesture names are the ones `profile read` reports (`cursor.two_finger_tap`, `modnav.swipe_up`, …). Without a label the sheet shows the chord, then Studio's alias in parentheses. The HTML carries `data-mode` and `data-gesture` attributes so a live view can highlight the active mode and last gesture.
 
 Writable settings: `cursor-speed`, `left-handed`, `multi-tap`, `led-mode`, `led-brightness`, `auto-sleep`, `edge-scroll-step`, `edge-scroll-invert`, `edge-scroll-side`, `edge-scroll-style`, `nickname`. Read-only: `config-version`, `extended-range`, `edge-scroll-width`.
 

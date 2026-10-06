@@ -12,7 +12,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
-from . import config, protocol, ring, settings, transport
+from . import cheatsheet, config, protocol, ring, settings, transport
 from .errors import ProloError, ProtocolError, UsageError
 
 # Replaced in tests with fakes.
@@ -120,6 +120,19 @@ def build_parser() -> argparse.ArgumentParser:
     )
     read = prof.add_parser("read", help="read back the flashed profile and its flag groups")
     read.add_argument("--out", type=Path, help="also write the raw profile blob to this file")
+
+    sheet = commands.add_parser(
+        "cheatsheet", help="render a cheat sheet from a profile (no ring needed)"
+    ).add_subparsers(dest="action", required=True, metavar="<action>")
+    sheet_render = sheet.add_parser("render", help="Studio profile export to HTML or Markdown")
+    sheet_render.add_argument(
+        "--profile", type=Path, required=True, help="Prolo Studio profile export (JSON)"
+    )
+    sheet_render.add_argument(
+        "--labels", type=Path, help="TOML: optional title, and [gestures] name = label"
+    )
+    sheet_render.add_argument("--format", choices=["html", "md"], default="html")
+    sheet_render.add_argument("--out", type=Path, help="write the sheet here instead of stdout")
 
     raw = commands.add_parser("raw", help="escape hatch for read opcodes").add_subparsers(
         dest="action", required=True, metavar="<action>"
@@ -275,6 +288,20 @@ async def cmd_raw_get(args: argparse.Namespace) -> dict[str, Any]:
     return await with_session(args, work)
 
 
+def cmd_cheatsheet_render(args: argparse.Namespace) -> dict[str, Any] | None:
+    try:
+        text = cheatsheet.render(args.profile, args.labels, args.format)
+    except (OSError, ValueError) as error:
+        raise UsageError(f"cannot render the cheat sheet: {error}") from error
+    if args.out:
+        args.out.write_text(text)
+        return {"out": str(args.out), "bytes": len(text.encode()), "format": args.format}
+    if args.json:
+        return {"format": args.format, "document": text}
+    sys.stdout.write(text)
+    return None
+
+
 async def dispatch(args: argparse.Namespace) -> Any:
     match (args.command, getattr(args, "action", None)):
         case ("doctor", _):
@@ -297,6 +324,8 @@ async def dispatch(args: argparse.Namespace) -> Any:
             return await cmd_profile_read(args)
         case ("raw", "get"):
             return await cmd_raw_get(args)
+        case ("cheatsheet", "render"):
+            return cmd_cheatsheet_render(args)
     raise UsageError(f"unknown command {args.command}")
 
 
@@ -344,6 +373,8 @@ def main(argv: list[str] | None = None) -> int:
         return error.exit_code
     except KeyboardInterrupt:
         return 130
+    if data is None:
+        return 0
     if args.json:
         print(json.dumps({"ok": True, "data": data}, default=str))
     else:
