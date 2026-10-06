@@ -149,8 +149,13 @@ def _plan_edge_style(text: str, _snap: Snapshot, flags: int) -> tuple[Any, list[
     return style, _cursor(p.apply_cursor_device_bits(flags, continuous=style == "continuous"))
 
 
-def _cursor_flags(snap: Snapshot) -> int:
-    return snap.config.flags["cursor"]
+def _cursor_bit(snap: Snapshot, bit: int) -> bool | None:
+    flags = snap.config.flags.get("cursor")
+    return None if flags is None else bool(flags & bit)
+
+
+def _choice(value: bool | None, on: str, off: str) -> str | None:
+    return None if value is None else (on if value else off)
 
 
 SETTINGS: dict[str, Setting] = {
@@ -209,7 +214,7 @@ SETTINGS: dict[str, Setting] = {
             "edge-scroll-invert",
             "Invert edge scroll direction",
             "on|off",
-            lambda s: bool(_cursor_flags(s) & p.CURSOR_EDGE_SCROLL_INVERT),
+            lambda s: _cursor_bit(s, p.CURSOR_EDGE_SCROLL_INVERT),
             _plan_edge_invert,
             needs_cursor_flags=True,
         ),
@@ -217,7 +222,7 @@ SETTINGS: dict[str, Setting] = {
             "edge-scroll-side",
             "Trackpad side used for edge scroll",
             "left|right",
-            lambda s: "left" if _cursor_flags(s) & p.CURSOR_EDGE_SCROLL_SIDE_LEFT else "right",
+            lambda s: _choice(_cursor_bit(s, p.CURSOR_EDGE_SCROLL_SIDE_LEFT), "left", "right"),
             _plan_edge_side,
             needs_cursor_flags=True,
         ),
@@ -225,8 +230,8 @@ SETTINGS: dict[str, Setting] = {
             "edge-scroll-style",
             "Edge scroll behavior",
             "stepped|continuous",
-            lambda s: (
-                "continuous" if _cursor_flags(s) & p.CURSOR_EDGE_SCROLL_CONTINUOUS else "stepped"
+            lambda s: _choice(
+                _cursor_bit(s, p.CURSOR_EDGE_SCROLL_CONTINUOUS), "continuous", "stepped"
             ),
             _plan_edge_style,
             needs_cursor_flags=True,
@@ -258,6 +263,7 @@ def lookup(name: str) -> Setting:
 def snapshot_values(snap: Snapshot) -> dict[str, Any]:
     values = {name: setting.read(snap) for name, setting in SETTINGS.items()}
     values.update({name: read(snap) for name, read in READ_ONLY.items()})
+    values["legacy_protocol"] = snap.legacy
     return values
 
 

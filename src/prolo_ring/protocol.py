@@ -158,6 +158,16 @@ def status_name(code: int) -> str:
     return STATUS_NAMES.get(code, f"UNKNOWN(0x{code:02X})")
 
 
+class UnsupportedReply(ValueError):
+    """The ring answered a GET with status ERR: the opcode is not implemented on this firmware."""
+
+
+def is_error_reply(message: bytes) -> bool:
+    """[op][0xFF], usually followed by stale padding: the ring always notifies a fixed 20-byte
+    buffer and only overwrites the leading bytes, so trailing bytes come from earlier replies."""
+    return len(message) >= 2 and message[1] == 0xFF
+
+
 def parse_u8_get(message: bytes, opcode: int) -> int:
     """Single-byte GET replies arrive as [op][val] or, on some firmware, [op][op][val]."""
     if len(message) >= 3 and message[1] == opcode:
@@ -189,8 +199,14 @@ def parse_all_config(message: bytes) -> AllConfig:
     data = message[1:]
     if len(data) >= 20 and data[0] == GET_ALL_CONFIG:
         data = data[1:]
+    if data and data[0] == 0xFF:
+        raise UnsupportedReply(
+            "GET_ALL_CONFIG answered ERR; this firmware predates the config dump"
+        )
     if len(data) < 19:
         raise ValueError(f"config dump needs 19 bytes, got {len(data)}: {message.hex()}")
+    if not 1 <= data[0] <= 15:
+        raise UnsupportedReply(f"implausible config_version {data[0]} in reply {message.hex()}")
     (
         version,
         sens,
@@ -251,6 +267,8 @@ def decode_flags(group: str, value: int) -> dict[str, object]:
 
 
 def parse_flag_group(message: bytes, group: int) -> int:
+    if is_error_reply(message):
+        raise UnsupportedReply(f"GET_FLAG_GROUP {group} answered ERR")
     if len(message) < 4 or message[0] != GET_FLAG_GROUP or message[1] != group:
         raise ValueError(f"bad flag group {group} reply: {message.hex()}")
     return struct.unpack_from("<H", message, 2)[0]

@@ -1,4 +1,10 @@
-"""A simulated ring in App Status that answers the opcodes the way docs/protocol.md describes."""
+"""A simulated ring in App Status that answers the opcodes the way docs/protocol.md describes.
+
+Like the real ring, every notification is a fixed 20-byte buffer: a reply overwrites only its
+leading bytes, so the tail carries stale bytes from earlier replies. `legacy=True` mimics
+firmware older than 1.0.7, which answers ERR to the config dump, MAC, flag-group, and
+readback opcodes and has no firmware-revision characteristic.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +14,7 @@ from typing import Any
 
 COMMAND_CHAR = "b46e428d-e64c-4c44-8020-844bb9b6e7d6"
 FIRMWARE_CHAR = "00002a26-0000-1000-8000-00805f9b34fb"
+NOTIFY_LEN = 20
 
 
 class FakeRing:
@@ -18,10 +25,12 @@ class FakeRing:
         config_version: int = 3,
         doubled_replies: bool = False,
         profile: bytes = b"",
+        legacy: bool = False,
     ) -> None:
         self.firmware = firmware
         self.doubled = doubled_replies
         self.profile = profile
+        self.legacy = legacy
         self.sensitivity = 40
         self.left_handed = 0
         self.tx_power = 0
@@ -35,6 +44,7 @@ class FakeRing:
         self.flags = {1: 0x000F, 2: 0x007F, 3: 0x0017, 4: 0x0007, 5: 0x62BF, 6: 0x0007}
         self.writes: list[bytes] = []
         self.connected = False
+        self._buffer = bytearray(b"\x5f\xcf\x44\x07\x00\x60\x7b\x6f\xb7\x77\x00\x0c\xdb\x41" * 2)
         self._callback: Callable[[Any, bytearray], Any] | None = None
 
     async def connect(self) -> None:
@@ -52,14 +62,21 @@ class FakeRing:
 
     async def read_gatt_char(self, char: str, /) -> bytearray:
         assert char == FIRMWARE_CHAR
+        if self.legacy:
+            raise RuntimeError("Characteristic 2a26 was not found")
         return bytearray(self.firmware.encode())
 
     def _reply(self, data: bytes) -> None:
         assert self._callback is not None
-        self._callback(None, bytearray(data))
+        assert len(data) <= NOTIFY_LEN
+        self._buffer[: len(data)] = data
+        self._callback(None, bytearray(self._buffer[:NOTIFY_LEN]))
 
     def _get(self, op: int, value: bytes) -> None:
         self._reply(bytes([op, op]) + value if self.doubled else bytes([op]) + value)
+
+    def _err(self, op: int) -> None:
+        self._reply(bytes([op, 0xFF]))
 
     async def write_gatt_char(
         self, char: str, data: bytes, /, response: bool | None = None
@@ -67,6 +84,9 @@ class FakeRing:
         assert char == COMMAND_CHAR
         self.writes.append(bytes(data))
         op, body = data[0], bytes(data[1:])
+        if self.legacy and op in (123, 129, 118, 133, 122):
+            self._err(op)
+            return
         match op:
             case 123:
                 dump = struct.pack(
@@ -82,7 +102,21 @@ class FakeRing:
                     self.edge_width,
                     *(self.flags[g] for g in (1, 2, 3, 4, 5)),
                 )
-                self._get(op, dump)
+                self._reply(bytes([op]) + dump)
+            case 104:
+                self._get(op, bytes([self.sensitivity]))
+            case 106:
+                self._get(op, bytes([self.left_handed]))
+            case 108:
+                self._get(op, bytes([self.tx_power]))
+            case 110:
+                self._reply(bytes([op, *self.led]))
+            case 112:
+                self._get(op, bytes([self.multi_tap]))
+            case 114:
+                self._get(op, bytes([self.auto_sleep]))
+            case 116:
+                self._get(op, bytes([self.edge_width]))
             case 122:
                 self._get(op, bytes([self.edge_step]))
             case 102:

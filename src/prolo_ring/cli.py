@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from . import config, protocol, ring, settings, transport
-from .errors import ProloError, UsageError
+from .errors import ProloError, ProtocolError, UsageError
 
 # Replaced in tests with fakes.
-open_session: Callable[..., transport.Session] = transport.open_session
+open_session: Callable[..., Awaitable[transport.Session]] = transport.open_session
 scan: Callable[[float], Awaitable[list[dict[str, Any]]]] = transport.scan
 
 EPILOG = """\
@@ -60,6 +60,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=transport.DEFAULT_TIMEOUT,
         help="seconds to wait for each ring reply (default: %(default)s)",
     )
+    parser.add_argument(
+        "--scan-timeout",
+        type=float,
+        default=15.0,
+        help="seconds to look for the ring before connecting (default: %(default)s)",
+    )
     parser.add_argument("--verbose", action="store_true", help="log raw frames to stderr")
     parser.add_argument("--version", action="version", version=f"prolo-ring {version()}")
     commands = parser.add_subparsers(dest="command", required=True, metavar="<command>")
@@ -87,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
         dest="action", required=True, metavar="<action>"
     )
     device.add_parser("info", help="firmware, edition, battery, mode, MAC, nickname")
+    device.add_parser("dump", help="info, settings, and profile in a single connection")
 
     group = commands.add_parser("settings", help="Ring Settings").add_subparsers(
         dest="action", required=True, metavar="<action>"
@@ -123,21 +130,30 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def require_address(args: argparse.Namespace) -> str:
-    target = config.resolve_target(args.address)
-    if not target.address:
-        raise UsageError(
-            f"no ring address: pass --address, set ${config.ENV_ADDRESS}, or run `prolo-ring init`"
-        )
-    return target.address
-
-
 async def with_session(
     args: argparse.Namespace, work: Callable[[transport.Session], Awaitable[Any]]
 ) -> Any:
-    session = open_session(require_address(args), timeout=args.timeout, verbose=args.verbose)
+    session = await open_session(
+        config.resolve_target(args.address).address,
+        timeout=args.timeout,
+        scan_timeout=args.scan_timeout,
+        verbose=args.verbose,
+    )
     async with session:
         return await work(session)
+
+
+async def dump_ring(session: transport.Session) -> dict[str, Any]:
+    """Everything readable in one connection: the ring stops advertising after a disconnect."""
+    out: dict[str, Any] = {
+        "device": await ring.device_info(session),
+        "settings": await settings.get_settings(session),
+    }
+    try:
+        out["profile"] = await ring.read_profile(session)
+    except ProtocolError as error:
+        out["profile"] = {"error": {"code": error.code, "message": error.message}}
+    return out
 
 
 async def cmd_doctor(args: argparse.Namespace) -> dict[str, Any]:
@@ -269,6 +285,8 @@ async def dispatch(args: argparse.Namespace) -> Any:
             return await cmd_init(args)
         case ("device", "info"):
             return await with_session(args, ring.device_info)
+        case ("device", "dump"):
+            return await with_session(args, dump_ring)
         case ("settings", "list"):
             return cmd_settings_list()
         case ("settings", "get"):

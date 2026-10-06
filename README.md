@@ -45,6 +45,7 @@ The ring address comes from `--address`, then `$PROLO_RING_ADDRESS`, then `$XDG_
 | `rings scan` | Lists rings advertising nearby. `status` is `app` (connectable), `device` (normal mouse mode), or `dfu` (firmware update mode). |
 | `init [ADDRESS]` | Saves the default ring. Without an address it picks the single App Status ring nearby. |
 | `device info` | Firmware revision, whether it's the tested version, config version, nickname, MAC, edition, battery percent, and current mode. |
+| `device dump` | `device info`, `settings get`, and `profile read` in one connection. Prefer this: the ring stops advertising after each disconnect, so every separate command costs a 2x Tap + Hold. |
 | `settings list` | Every setting, its accepted values, and whether it is writable. No ring needed. |
 | `settings get [NAME]` | Reads all settings, or one. |
 | `settings set NAME VALUE [--dry-run] [--force]` | Changes one setting, then reads it back and reports `verified`. `--dry-run` reads the current value and shows the bytes without writing. Writes are refused on firmware other than 1.0.7 unless you pass `--force`. |
@@ -52,6 +53,10 @@ The ring address comes from `--address`, then `$PROLO_RING_ADDRESS`, then `$XDG_
 | `raw get OPCODE [--payload HEX]` | Escape hatch: sends one read opcode and prints the reply bytes. |
 
 Writable settings: `cursor-speed`, `left-handed`, `multi-tap`, `led-mode`, `led-brightness`, `auto-sleep`, `edge-scroll-step`, `edge-scroll-invert`, `edge-scroll-side`, `edge-scroll-style`, `nickname`. Read-only: `config-version`, `extended-range`, `edge-scroll-width`.
+
+## Older firmware
+
+Rings shipped before firmware 1.0.7 answer ERR to the config dump, MAC, flag-group, and profile-readback opcodes and expose no firmware-revision characteristic. The CLI detects this and reads settings one opcode at a time; results carry `"legacy_protocol": true`, unavailable settings read as `null`, and `profile read` exits 5 with code `unsupported`. Writes need `--force` because the firmware can't be identified. Update the ring in Prolo Studio to get the full surface. See the hardware notes at the top of [docs/protocol.md](docs/protocol.md).
 
 ## Safety
 

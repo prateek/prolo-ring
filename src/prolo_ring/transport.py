@@ -47,6 +47,7 @@ class Session:
         self.darwin = darwin
         self.timeout = timeout
         self.verbose = verbose
+        self.address: str | None = None
         self.sent: list[bytes] = []
         self._pending: tuple[asyncio.Future[bytes], Callable[[bytes], bool]] | None = None
 
@@ -171,11 +172,71 @@ async def scan(timeout: float) -> list[dict[str, Any]]:
     return sorted(rings, key=lambda ring: -(ring["rssi"] or -999))
 
 
-def open_session(
-    address: str, *, timeout: float = DEFAULT_TIMEOUT, verbose: bool = False
+REFRESH_HINT = (
+    "put the ring in App Status (3x Tap + Hold on the Modstrip) or refresh its 60-second "
+    "advertising window (2x Tap + Hold), then retry"
+)
+
+
+def pick_ring(address: str | None, seen: dict[str, tuple[Any, str | None]]) -> Any:
+    """Choose the device to connect to from scan results: the saved address if it is advertising
+    in App Status, else the only App Status ring in range. The ring's address rotates between
+    boots on CoreBluetooth, so the saved one is a preference, not a requirement."""
+    apps = {addr: device for addr, (device, name) in seen.items() if classify(name) == "app"}
+    if address in apps:
+        return apps[address]
+    if len(apps) == 1:
+        (device,) = apps.values()
+        if address and address in seen:
+            log(f"ring at {address} is not in App Status; using {device.address} instead")
+        return device
+    if address in seen:
+        raise RingNotFound(
+            f"ring at {address} is advertising as {seen[address][1]!r}, not in App Status; "
+            "3x Tap + Hold on the Modstrip, then retry",
+            address=address,
+        )
+    if len(apps) > 1:
+        raise RingNotFound(
+            f"{len(apps)} rings in App Status; pass --address with one of {sorted(apps)}",
+            rings=sorted(apps),
+        )
+    raise RingNotFound(f"no ring in App Status within range; {REFRESH_HINT}", address=address)
+
+
+async def find_ring(address: str | None, *, scan_timeout: float, verbose: bool = False) -> Any:
+    from bleak import BleakScanner
+
+    seen: dict[str, tuple[Any, str | None]] = {}
+
+    def wanted(device: Any, adv: Any) -> bool:
+        name = adv.local_name or device.name
+        seen[device.address] = (device, name)
+        return device.address == address and classify(name) == "app"
+
+    try:
+        device = await BleakScanner.find_device_by_filter(wanted, timeout=scan_timeout)
+    except Exception as error:
+        raise _bluetooth_error(error) from error
+    if verbose:
+        log(f"scan saw {len(seen)} devices; ring matched directly: {device is not None}")
+    return device if device is not None else pick_ring(address, seen)
+
+
+async def open_session(
+    address: str | None,
+    *,
+    timeout: float = DEFAULT_TIMEOUT,
+    scan_timeout: float = 15.0,
+    verbose: bool = False,
 ) -> Session:
+    """Scan, then connect with the device object the scan returned. On CoreBluetooth a second
+    discovery by address string is unreliable, and the ring only advertises briefly."""
     from bleak import BleakClient
 
-    return Session(
-        BleakClient(address, timeout=max(timeout, 10.0)), timeout=timeout, verbose=verbose
+    device = await find_ring(address, scan_timeout=scan_timeout, verbose=verbose)
+    session = Session(
+        BleakClient(device, timeout=max(timeout, 10.0)), timeout=timeout, verbose=verbose
     )
+    session.address = device.address
+    return session

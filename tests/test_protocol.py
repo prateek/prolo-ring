@@ -109,3 +109,22 @@ def test_profile_rejects_oversized_entries():
     bad = bytes([1, 0, 1, 0]) + struct.pack("<BBH", 20, 17, 2) + bytes([1, 0])
     with pytest.raises(ProfileFormatError, match="steps=17"):
         decode_profile(bad)
+
+
+# Frames captured from a Kickstarter ring on pre-1.0.7 firmware, 2026-10-06. Every notification
+# is 20 bytes; the tail is stale buffer content from earlier replies.
+LIVE_TAIL = bytes.fromhex("5fcf440700607b6fb777000cdb41")
+
+
+def test_live_config_dump_err_is_reported_as_unsupported():
+    frame = bytes.fromhex("7bff00000000") + LIVE_TAIL
+    with pytest.raises(p.UnsupportedReply, match="ERR"):
+        p.parse_all_config(frame)
+
+
+def test_live_keepalive_license_and_name_frames_decode():
+    keepalive = bytes.fromhex("786400010000") + LIVE_TAIL
+    assert p.parse_keepalive(keepalive) == p.Telemetry(battery_percent=100, mode="cursor")
+    assert p.parse_license_flags(bytes.fromhex("cd0200010000") + LIVE_TAIL) == (2, "pro")
+    assert p.parse_user_name(bytes.fromhex("664a6f657900") + LIVE_TAIL) == "Joey"
+    assert p.parse_mac(bytes.fromhex("81ff00010000") + LIVE_TAIL) is None

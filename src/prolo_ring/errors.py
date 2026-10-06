@@ -33,6 +33,12 @@ class ProtocolError(ProloError):
     exit_code = 5
 
 
+class Unsupported(ProtocolError):
+    """The ring answered ERR: this firmware does not implement the opcode."""
+
+    code = "unsupported"
+
+
 class RefusedOpcode(ProloError):
     """Raised before any byte is sent when an opcode is outside the safe allowlist."""
 

@@ -4,7 +4,7 @@ import struct
 import pytest
 
 from prolo_ring import cli, protocol, transport
-from prolo_ring.errors import RefusedOpcode
+from prolo_ring.errors import RefusedOpcode, RingNotFound
 
 from .fake_ring import FakeRing
 
@@ -14,12 +14,39 @@ def ring(monkeypatch, tmp_path):
     fake = FakeRing()
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setenv("PROLO_RING_ADDRESS", "AA:BB:CC:DD:EE:FF")
-    monkeypatch.setattr(
-        cli,
-        "open_session",
-        lambda address, **kw: transport.Session(fake, darwin=False, timeout=1.0),
-    )
+
+    async def fake_open(address, **kw):
+        return transport.Session(fake, darwin=False, timeout=1.0)
+
+    monkeypatch.setattr(cli, "open_session", fake_open)
     return fake
+
+
+class Dev:
+    def __init__(self, address, name):
+        self.address, self.name = address, name
+
+
+def seen(*devices):
+    return {d.address: (d, d.name) for d in devices}
+
+
+def test_pick_ring_prefers_saved_address_in_app_status():
+    saved, other = Dev("A", "Prolo App Ring (Joey)"), Dev("B", "Prolo App Ring")
+    assert transport.pick_ring("A", seen(saved, other)) is saved
+
+
+def test_pick_ring_falls_back_to_the_only_app_ring_when_address_rotated():
+    ring = Dev("NEW", "Prolo App Ring (Joey)")
+    assert transport.pick_ring("OLD", seen(ring, Dev("X", "Pura-48E4"))) is ring
+    assert transport.pick_ring(None, seen(ring)) is ring
+
+
+def test_pick_ring_explains_a_ring_still_in_device_status():
+    with pytest.raises(RingNotFound, match="not in App Status"):
+        transport.pick_ring("A", seen(Dev("A", "Prolo Ring (Joey)")))
+    with pytest.raises(RingNotFound, match="no ring in App Status"):
+        transport.pick_ring("A", seen(Dev("X", "TUYA_")))
 
 
 def run(capsys, *argv):
@@ -157,3 +184,46 @@ def test_settings_list_needs_no_ring(capsys):
     code, out = run(capsys, "settings", "list")
     assert code == 0
     assert {"cursor-speed", "nickname", "edge-scroll-width"} <= {r["name"] for r in out["data"]}
+
+
+@pytest.fixture
+def legacy_ring(ring):
+    ring.legacy = True
+    ring.nickname = b"Joey"
+    return ring
+
+
+def test_legacy_firmware_reads_settings_one_opcode_at_a_time(legacy_ring, capsys):
+    code, out = run(capsys, "settings", "get")
+    assert code == 0
+    assert out["data"]["legacy_protocol"] is True
+    assert out["data"]["cursor-speed"] == 40
+    assert out["data"]["nickname"] == "Joey"
+    assert out["data"]["edge-scroll-side"] is None
+    assert out["data"]["edge-scroll-step"] is None
+    assert 123 in {w[0] for w in legacy_ring.writes}
+    assert 104 in {w[0] for w in legacy_ring.writes}
+
+
+def test_legacy_firmware_device_info_marks_unknowns(legacy_ring, capsys):
+    code, out = run(capsys, "device", "info")
+    assert code == 0
+    data = out["data"]
+    assert data["firmware"] is None and data["firmware_tested"] is False
+    assert data["legacy_protocol"] is True and data["config_version"] is None
+    assert data["edition"] == "pro" and data["battery_percent"] == 87
+    assert data["mac_address"] is None
+
+
+def test_legacy_firmware_profile_read_is_unsupported(legacy_ring, capsys):
+    code, out = run(capsys, "profile", "read")
+    assert code == 5
+    assert out["error"]["code"] == "unsupported"
+
+
+def test_legacy_firmware_write_needs_force_and_still_verifies(legacy_ring, capsys):
+    code, out = run(capsys, "settings", "set", "cursor-speed", "55")
+    assert code == 2
+    code, out = run(capsys, "settings", "set", "cursor-speed", "55", "--force")
+    assert code == 0 and out["data"]["verified"] is True
+    assert legacy_ring.sensitivity == 55
