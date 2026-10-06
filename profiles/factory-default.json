@@ -1,0 +1,261 @@
+{
+  "settings": {
+    "actionCursorSwipeUp": {
+      "selected": "radioKeyboard",
+      "keySequence": "Up",
+      "gestureAlias": "Arrow Up"
+    },
+    "actionCursorSwipeDown": {
+      "selected": "radioKeyboard",
+      "keySequence": "Down",
+      "gestureAlias": "Arrow Down"
+    },
+    "actionCursorSwipeRight": {
+      "selected": "radioKeyboard",
+      "keySequence": "Right",
+      "gestureAlias": "Arrow Right"
+    },
+    "actionCursorSwipeLeft": {
+      "selected": "radioKeyboard",
+      "keySequence": "Left",
+      "gestureAlias": "Arrow Left"
+    },
+    "actionPinchOut": {
+      "selected": "radioMacro",
+      "macros": [
+        {
+          "keySequence": "Ctrl+=",
+          "type": "Key Input"
+        },
+        {
+          "keySequence": "Key00",
+          "type": "Key Input"
+        }
+      ],
+      "gestureAlias": "Zoom In"
+    },
+    "actionPinchIn": {
+      "selected": "radioMacro",
+      "macros": [
+        {
+          "keySequence": "Ctrl+-",
+          "type": "Key Input"
+        },
+        {
+          "keySequence": "Key00",
+          "type": "Key Input"
+        }
+      ],
+      "gestureAlias": "Zoom Out"
+    },
+    "actionSwipeUp": {
+      "selected": "radioMediaControls",
+      "action": "Volume Up",
+      "gestureAlias": "Volume Up"
+    },
+    "actionSwipeDown": {
+      "selected": "radioMediaControls",
+      "action": "Volume Down",
+      "gestureAlias": "Volume Down"
+    },
+    "actionSwipeRight": {
+      "selected": "radioMediaControls",
+      "action": "Next Track",
+      "gestureAlias": "Next Track"
+    },
+    "actionSwipeLeft": {
+      "selected": "radioMediaControls",
+      "action": "Previous Track",
+      "gestureAlias": "Previous Track"
+    },
+    "actionTouchTap": {
+      "selected": "radioMediaControls",
+      "action": "Play/Pause",
+      "gestureAlias": "Play / Pause"
+    },
+    "actionTouchDoubleTap": {
+      "selected": "radioMediaControls",
+      "action": "Toggle Mute",
+      "gestureAlias": "Mute"
+    },
+    "actionMHSwipeRight": {
+      "selected": "radioMediaControls",
+      "action": "Fast Fwd",
+      "gestureAlias": "Fast Forward"
+    },
+    "actionMHSwipeLeft": {
+      "selected": "radioMediaControls",
+      "action": "Back",
+      "gestureAlias": "Back"
+    },
+    "actionNavTap": {
+      "selected": "radioKeyboard",
+      "keySequence": "Enter",
+      "gestureAlias": "Enter"
+    },
+    "actionNavDoubleTap": {
+      "selected": "radioMediaControls",
+      "action": "Back",
+      "gestureAlias": "Back"
+    },
+    "actionGestureSwipeRight": {
+      "selected": "radioDisable"
+    },
+    "actionTouchTripleTap": {
+      "selected": "radioDisable"
+    },
+    "actionNavTripleTap": {
+      "selected": "radioMediaControls",
+      "action": "Home",
+      "gestureAlias": "Home"
+    },
+    "actionDoubleTapBLC": {
+      "selected": "radioMouse",
+      "mouseAction": "Left Button Down (Hold)",
+      "x": 0,
+      "y": 0,
+      "gestureAlias": "Drag Lock"
+    },
+    "actionDoubleTapBRC": {
+      "selected": "radioMediaControls",
+      "action": "Back",
+      "gestureAlias": "Back"
+    },
+    "actionLongHoldAirTap": {
+      "selected": "radioMacro",
+      "macros": [
+        {
+          "type": "Snap Cursor - Left Edge",
+          "mouseAction": "Snap Cursor - Left Edge",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "type": "Mouse Move",
+          "mouseAction": "Mouse Move",
+          "x": 120,
+          "y": 0
+        }
+      ],
+      "gestureAlias": "Left Edge Assist"
+    },
+    "actionLongHoldAir2xTap": {
+      "selected": "radioMacro",
+      "macros": [
+        {
+          "type": "Snap Cursor - Right Edge",
+          "mouseAction": "Snap Cursor - Right Edge",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "type": "Mouse Move",
+          "mouseAction": "Mouse Move",
+          "x": -120,
+          "y": 0
+        }
+      ],
+      "gestureAlias": "Right Edge Assist"
+    },
+    "actionMHSwipeUp": {
+      "selected": "radioDisable"
+    },
+    "actionGestureSwipeLeft": {
+      "selected": "radioDisable"
+    },
+    "actionTrackpadLongHold": {
+      "selected": "radioMouse",
+      "mouseAction": "Mouse Middle Click",
+      "x": 0,
+      "y": 0,
+      "gestureAlias": "Middle Click"
+    },
+    "actionFingerTap": {
+      "selected": "radioMouse",
+      "mouseAction": "Mouse Right Click",
+      "x": 0,
+      "y": 0
+    },
+    "actionDualTapTT": {
+      "selected": "radioKeyboard",
+      "keySequence": "Meta+D",
+      "gestureAlias": "Win + D"
+    },
+    "actionDualTapMT": {
+      "selected": "radioMouse",
+      "mouseAction": "Mouse Middle Click",
+      "x": 0,
+      "y": 0
+    },
+    "actionGestureSingleTap": {
+      "selected": "radioDisable"
+    },
+    "actionMNSwipeUp": {
+      "selected": "radioKeyboard",
+      "keySequence": "Page Up",
+      "gestureAlias": "Page Up"
+    },
+    "actionMNSwipeDown": {
+      "selected": "radioKeyboard",
+      "keySequence": "Page Down",
+      "gestureAlias": "Page Down"
+    },
+    "actionMNSwipeLeft": {
+      "selected": "radioKeyboard",
+      "keySequence": "Home",
+      "gestureAlias": "Home"
+    },
+    "actionMNSwipeRight": {
+      "selected": "radioKeyboard",
+      "keySequence": "End",
+      "gestureAlias": "End"
+    },
+    "actionTrackpadLongHoldR": {
+      "selected": "radioMouse",
+      "mouseAction": "Mouse Right Click",
+      "x": 0,
+      "y": 0,
+      "gestureAlias": "Right Click"
+    },
+    "actionNavLongHold": {
+      "selected": "radioKeyboard",
+      "keySequence": "Ctrl+Meta",
+      "gestureAlias": "Push To Talk"
+    },
+    "_profileSettings": {
+      "version": 5,
+      "btnMCursor": true,
+      "btnMNavigation": true,
+      "btnMTouch": true,
+      "btnMAir": true,
+      "dual_tap_tt": true,
+      "air_taps": true,
+      "edge_scroll": true,
+      "nav_edge_scroll": true,
+      "joystick_assist": true,
+      "mod_track_drag": true,
+      "modstrip_long_hold_mode": 1,
+      "chkHS1": true,
+      "chkVS1": true,
+      "chkTG1": true,
+      "chkPG1": true,
+      "chkHS4": true,
+      "chkVS4": true,
+      "chkTG4": true,
+      "chkHS2": true,
+      "chkVS2": true,
+      "chkTG2": true,
+      "chkHS3": true,
+      "chkVS3": true,
+      "chkTG3": true,
+      "bottom_left": true,
+      "bottom_right": true,
+      "cursor_bl_true_hold": false,
+      "cursor_br_true_hold": false,
+      "nav_long_hold": true,
+      "nav_long_hold_true_hold": true,
+      "touch_long_hold": false,
+      "touch_long_hold_true_hold": true
+    }
+  }
+}
