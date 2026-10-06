@@ -55,6 +55,8 @@ The ring address comes from `--address`, then `$PROLO_RING_ADDRESS`, then `$XDG_
 
 ## Cheat sheet
 
+![Factory profile rendered as a cheat sheet](docs/cheatsheet-factory.png)
+
 ```sh
 prolo-ring cheatsheet render --profile profiles/factory-default.json --out ring.html
 ```

@@ -44,7 +44,7 @@ CURSOR = Section(
             "",
             "Joystick assist",
             "Swipe edge to edge and keep holding",
-            "Pointer speed follows distance from center; outer ring boosts it",
+            "Speed follows distance from center; the outer ring boosts it",
             ("joystick_assist",),
         ),
         Gesture(
@@ -146,7 +146,7 @@ NAVIGATION = Section(
             "",
             "Tap + hold",
             "Tap, then touch and hold",
-            "Temporary pointer control with joystick assist (needs multi-tap)",
+            "Temporary pointer with joystick assist; needs multi-tap",
         ),
     ),
     (
@@ -185,7 +185,7 @@ TOUCH = Section(
             "",
             "Tap + hold",
             "Tap, then touch and hold",
-            "Temporary pointer control with joystick assist (needs multi-tap)",
+            "Temporary pointer with joystick assist; needs multi-tap",
         ),
     ),
     (
