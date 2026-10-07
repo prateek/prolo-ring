@@ -980,7 +980,7 @@ def render_html(sheet: Sheet) -> str:
     )
 
 
-def render(profile_path: Path, labels_path: Path | None, fmt: str) -> str:
+def render(profile_path: Path, labels_path: Path | None, fmt: str, *, mode: str = "cursor") -> str:
     raw = profile_path.read_bytes()
     sheet = build(
         load_profile(profile_path),
@@ -988,4 +988,8 @@ def render(profile_path: Path, labels_path: Path | None, fmt: str) -> str:
         profile_name=profile_path.name,
         profile_hash=hashlib.sha256(raw).hexdigest()[:12],
     )
+    if fmt == "svg":
+        from .card import render_card
+
+        return render_card(sheet, mode)
     return render_html(sheet) if fmt == "html" else render_markdown(sheet)

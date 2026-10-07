@@ -131,7 +131,13 @@ def build_parser() -> argparse.ArgumentParser:
     sheet_render.add_argument(
         "--labels", type=Path, help="TOML: optional title, and [gestures] name = label"
     )
-    sheet_render.add_argument("--format", choices=["html", "md"], default="html")
+    sheet_render.add_argument("--format", choices=["html", "md", "svg"], default="html")
+    sheet_render.add_argument(
+        "--mode",
+        choices=["cursor", "navigation", "touch", "air", "system", "all"],
+        default="cursor",
+        help="which overlay card to draw for --format svg (default: %(default)s)",
+    )
     sheet_render.add_argument("--out", type=Path, help="write the sheet here instead of stdout")
 
     raw = commands.add_parser("raw", help="escape hatch for read opcodes").add_subparsers(
@@ -290,7 +296,7 @@ async def cmd_raw_get(args: argparse.Namespace) -> dict[str, Any]:
 
 def cmd_cheatsheet_render(args: argparse.Namespace) -> dict[str, Any] | None:
     try:
-        text = cheatsheet.render(args.profile, args.labels, args.format)
+        text = cheatsheet.render(args.profile, args.labels, args.format, mode=args.mode)
     except (OSError, ValueError) as error:
         raise UsageError(f"cannot render the cheat sheet: {error}") from error
     if args.out:
