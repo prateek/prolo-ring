@@ -51,11 +51,13 @@ The ring address comes from `--address`, then `$PROLO_RING_ADDRESS`, then `$XDG_
 | `settings set NAME VALUE [--dry-run] [--force]` | Changes one setting, then reads it back and reports `verified`. `--dry-run` reads the current value and shows the bytes without writing. Writes are refused on firmware other than 1.0.7 unless you pass `--force`. |
 | `profile read [--out FILE]` | Reads back the flashed gesture profile, decodes each gesture's steps, and reports the profile's mode and gesture-group flags. |
 | `raw get OPCODE [--payload HEX]` | Escape hatch: sends one read opcode and prints the reply bytes. |
-| `cheatsheet render --profile FILE [--labels FILE] [--format html\|md] [--out FILE]` | Renders a cheat sheet from a Studio profile export: one section per mode, built-in gestures included, chords shown with Mac glyphs, disabled gestures dimmed. No ring needed. |
+| `cheatsheet render --profile FILE [--labels FILE] [--format html\|md\|svg] [--mode VIEW] [--out FILE]` | Renders the cheat sheet from a Studio profile export. `html` is the two-page print reference, `md` a plain table, and `svg` one overlay card: `--mode cursor\|navigation\|touch\|air` draws that mode's trackpad map, `system` the Modstrip tap ladder, `all` the four modes tiled. No ring needed. |
 
 ## Cheat sheet
 
-![Factory profile rendered as a cheat sheet](docs/cheatsheet-factory.png)
+![The four mode cards](docs/cards/all.png)
+
+The cards are plain SVG (rects, circles, text), so macOS renders them natively; the dotfiles overlay shows the card for the ring's current mode without taking focus. The two-page HTML reference is in [docs/cheatsheet-factory.png](docs/cheatsheet-factory.png).
 
 ```sh
 prolo-ring cheatsheet render --profile profiles/factory-default.json --out ring.html

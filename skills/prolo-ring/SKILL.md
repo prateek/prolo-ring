@@ -43,4 +43,4 @@ prolo-ring --json settings set auto-sleep 30 --dry-run
 prolo-ring --json profile read --out /tmp/ring-profile.bin
 ```
 
-`prolo-ring settings list` describes every setting and its accepted values without a ring. `prolo-ring cheatsheet render --profile <studio-export.json> [--labels labels.toml]` renders a per-mode cheat sheet from a profile, also without a ring. Protocol details live in the repo's `docs/protocol.md`.
+`prolo-ring settings list` describes every setting and its accepted values without a ring. `prolo-ring cheatsheet render --profile <studio-export.json> [--labels labels.toml]` renders the two-page HTML reference from a profile, and `--format svg --mode <cursor|navigation|touch|air|system|all>` renders one overlay card; neither needs a ring. Protocol details live in the repo's `docs/protocol.md`.
